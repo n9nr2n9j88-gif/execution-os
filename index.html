@@ -1,0 +1,1662 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f19" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <title>个人执行系统 · To-Do + 执行块</title>
+  <style>
+    :root{
+      --bg:#0b0f19;
+      --card:#101827;
+      --muted:#93a4c7;
+      --text:#eaf0ff;
+      --line:#1f2a44;
+      --good:#4ade80;
+      --warn:#fbbf24;
+      --bad:#fb7185;
+      --accent:#60a5fa;
+      --accent2:#a78bfa;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",Helvetica,Arial,sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:
+        radial-gradient(900px 600px at 15% 10%, rgba(96,165,250,.18), transparent 55%),
+        radial-gradient(700px 520px at 85% 25%, rgba(167,139,250,.16), transparent 60%),
+        var(--bg);
+      color:var(--text);
+      font-family:var(--sans);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Mobile-first layout */
+    header{
+      position: sticky;
+      top:0;
+      z-index:10;
+      backdrop-filter: blur(10px);
+      background: rgba(11,15,25,.75);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .headerInner{
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 14px 14px 10px;
+      display:flex;
+      gap:10px;
+      align-items:flex-end;
+      justify-content:space-between;
+      flex-wrap:wrap;
+    }
+    h1{
+      margin:0;
+      font-size: 16px;
+      letter-spacing:.2px;
+    }
+    .subtitle{
+      margin-top:6px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.45;
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03);
+      color: var(--muted);
+      font-size: 12px;
+      white-space:nowrap;
+    }
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+    .row > *{flex:1}
+    a{color:#b9d7ff}
+
+    .container{
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 12px 14px 70px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+    @media (min-width: 980px){
+      .container{grid-template-columns: 1.15fr .85fr; gap:14px;}
+      h1{font-size:18px}
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.03), transparent 35%), var(--card);
+      border:1px solid rgba(255,255,255,.06);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:12px;
+    }
+    .card h2{
+      margin: 0 0 10px;
+      font-size: 13px;
+      color:#dbe7ff;
+      letter-spacing:.2px;
+    }
+    label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px;}
+    input, select, textarea, button{
+      font: inherit;
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03);
+      color: var(--text);
+      padding: 10px 11px;
+      outline:none;
+    }
+    textarea{min-height: 86px; resize: vertical; line-height:1.55}
+    input::placeholder, textarea::placeholder{color: rgba(147,164,199,.7)}
+    button{
+      cursor:pointer;
+      border:1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(96,165,250,.30), rgba(96,165,250,.10));
+      transition: transform .05s ease, filter .2s ease;
+      font-weight:650;
+      white-space:nowrap;
+    }
+    button:hover{filter:brightness(1.05)}
+    button:active{transform: translateY(1px)}
+    .btn2{
+      background: linear-gradient(180deg, rgba(167,139,250,.30), rgba(167,139,250,.10));
+    }
+    .btnGhost{
+      background: rgba(255,255,255,.02);
+      font-weight:650;
+    }
+    .btnDanger{
+      background: linear-gradient(180deg, rgba(251,113,133,.30), rgba(251,113,133,.10));
+      border-color: rgba(251,113,133,.25);
+    }
+    .small{font-size:12px; color:var(--muted); line-height:1.45}
+    .divider{height:1px; background: rgba(255,255,255,.08); margin: 12px 0;}
+
+    /* Tabs (mobile navigation) */
+    .tabs{
+      display:flex;
+      gap:8px;
+      margin-top:10px;
+    }
+    .tab{
+      flex:1;
+      padding:10px 10px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.02);
+      color: var(--muted);
+      font-weight:700;
+      text-align:center;
+      cursor:pointer;
+      user-select:none;
+    }
+    .tab.active{
+      background: linear-gradient(180deg, rgba(96,165,250,.22), rgba(255,255,255,.02));
+      color: var(--text);
+      border-color: rgba(96,165,250,.30);
+    }
+
+    /* Lists */
+    .list{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      max-height: 360px;
+      overflow:auto;
+      padding-right:2px;
+    }
+    @media (min-width: 980px){
+      .list{max-height: 420px;}
+    }
+    .item{
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.02);
+      border-radius: 14px;
+      padding:10px;
+    }
+    .itemTop{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:flex-start;
+    }
+    .itemTitle{font-weight:800; font-size:13px}
+    .tag{
+      font-size:11px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:999px;
+      padding:5px 8px;
+      color: var(--muted);
+      white-space:nowrap;
+    }
+    .itemBody{margin-top:8px; color:#d6e1ff; font-size:12px; line-height:1.55; white-space:pre-wrap}
+
+    /* KPI */
+    .kpi{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:10px;
+    }
+    @media (max-width: 520px){
+      .kpi{grid-template-columns:1fr}
+    }
+    .kpi .box{
+      padding:12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.02);
+    }
+    .kpi .num{
+      font-family: var(--mono);
+      font-size: 22px;
+      margin-top: 6px;
+      color:#f2f6ff;
+    }
+    canvas{width:100%; height: 180px; border-radius: 14px; border:1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.02)}
+
+    /* Timer */
+    .timer{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.02);
+    }
+    .time{
+      font-family: var(--mono);
+      font-size: 28px;
+      letter-spacing: .5px;
+    }
+
+    /* Today module */
+    .twoCol{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:10px;
+    }
+    @media (min-width: 980px){
+      .twoCol{grid-template-columns:1fr 1fr;}
+    }
+
+    /* Bottom install bar on mobile */
+    .bottomBar{
+      position: fixed;
+      left:0; right:0;
+      bottom:0;
+      z-index:20;
+      background: rgba(11,15,25,.88);
+      border-top:1px solid rgba(255,255,255,.06);
+      backdrop-filter: blur(10px);
+      padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+      display:none;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .bottomBar .hint{color:var(--muted); font-size:12px; line-height:1.4}
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: calc(16px + env(safe-area-inset-bottom));
+      transform: translateX(-50%);
+      background: rgba(15,23,42,.92);
+      border:1px solid rgba(255,255,255,.10);
+      padding:10px 12px;
+      border-radius: 999px;
+      box-shadow: var(--shadow);
+      color:#eef4ff;
+      font-size:12px;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    .toast.show{
+      opacity:1;
+      transform: translateX(-50%) translateY(-2px);
+    }
+    .hl-good{color:var(--good)}
+    .hl-warn{color:var(--warn)}
+    .hl-bad{color:var(--bad)}
+    .help{
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.55;
+      padding:10px;
+      border-radius:14px;
+      border:1px dashed rgba(255,255,255,.12);
+      background: rgba(255,255,255,.02);
+    }
+
+    /* Modal */
+    .modalMask{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.55);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:14px;
+      z-index:50;
+    }
+    .modal{
+      width:min(560px, 100%);
+      border-radius: 18px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(16,24,39,.96);
+      box-shadow: var(--shadow);
+      padding:12px;
+    }
+    .modal h3{margin:0 0 8px; font-size:14px}
+    .modalActions{display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; margin-top:10px;}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="headerInner">
+    <div>
+      <h1>个人执行系统（手机优先 + PWA）</h1>
+      <div class="subtitle">
+        To-Do 多列表 + 今日模块 + 执行块强制输出 + 奖励/连续天数。数据保存在本地，不联网。
+      </div>
+      <div class="tabs" style="max-width:520px;">
+        <div class="tab active" data-tab="todo">To-Do</div>
+        <div class="tab" data-tab="block">执行块</div>
+        <div class="tab" data-tab="today">今日</div>
+        <div class="tab" data-tab="stats">统计</div>
+      </div>
+    </div>
+
+    <div class="row" style="flex:0 0 auto;">
+      <span class="pill" id="todayPill">今天：-</span>
+      <button class="btnGhost" id="manageCatsBtn" style="flex:0 0 auto;">管理分类</button>
+      <button class="btnGhost" id="exportBtn" style="flex:0 0 auto;">导出</button>
+      <button class="btnDanger" id="resetBtn" style="flex:0 0 auto;">清空</button>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  <!-- LEFT column -->
+  <section class="card" id="panelTodo">
+    <h2>① 多个 To-Do List</h2>
+
+    <div class="row">
+      <div>
+        <label>选择列表</label>
+        <select id="todoListSelect"></select>
+      </div>
+      <div>
+        <label>新建列表</label>
+        <div class="row" style="gap:8px; flex-wrap:nowrap;">
+          <input id="newListName" placeholder="如：考试冲刺 / 工作 / 生活" />
+          <button id="addListBtn" style="flex:0 0 auto;">新建</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <button class="btnGhost" id="renameListBtn">重命名列表</button>
+      <button class="btnDanger" id="deleteListBtn">删除列表</button>
+      <div class="small" style="flex: 2 1 100%;">
+        列表用于“装任务”：你可以按科目/项目/场景分多个清单（学习、工作、生活等）。
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="row">
+      <div style="flex:1 1 100%;">
+        <label>新增 To-Do（可选分类/项目）</label>
+        <div class="row" style="gap:8px;">
+          <input id="todoTitle" placeholder="写清一个可执行动作（越小越好）" style="flex:2" />
+          <select id="todoCat" style="flex:1"></select>
+        </div>
+        <div class="row" style="gap:8px; margin-top:8px;">
+          <select id="todoPriority" style="flex:1">
+            <option value="2">优先级：高</option>
+            <option value="1" selected>优先级：中</option>
+            <option value="0">优先级：低</option>
+          </select>
+          <select id="todoEstimate" style="flex:1">
+            <option value="15">预计 15 分钟</option>
+            <option value="30" selected>预计 30 分钟</option>
+            <option value="45">预计 45 分钟</option>
+            <option value="60">预计 60 分钟</option>
+            <option value="90">预计 90 分钟</option>
+          </select>
+          <button id="addTodoBtn" style="flex:0 0 auto;">添加</button>
+        </div>
+        <div class="small" style="margin-top:6px;">
+          建议：把任务拆到“现在就能开始”的动作，并绑定输出（如：写 5 个要点、做 10 题、改 3 个 bug）。
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="row" style="align-items:flex-end;">
+      <div>
+        <label>筛选</label>
+        <select id="todoFilter">
+          <option value="open" selected>未完成</option>
+          <option value="done">已完成</option>
+          <option value="all">全部</option>
+        </select>
+      </div>
+      <div>
+        <label>排序</label>
+        <select id="todoSort">
+          <option value="priority" selected>按优先级</option>
+          <option value="estimate">按预计时长</option>
+          <option value="created">按创建时间</option>
+        </select>
+      </div>
+      <button class="btnGhost" id="addToBlockBtn" style="flex: 1 1 220px;">
+        选中 To-Do → 填入执行块目标
+      </button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="list" id="todoList"></div>
+  </section>
+
+  <section class="card" id="panelBlock" style="display:none;">
+    <h2>② 执行块（强制硬输出）</h2>
+
+    <div class="row">
+      <div>
+        <label>分类/项目（用于统计）</label>
+        <select id="blockCat"></select>
+        <div class="small">它的作用：给执行块打标签，方便你回看“今天到底在干什么”。</div>
+      </div>
+      <div>
+        <label>执行块类型</label>
+        <select id="blockType">
+          <option value="deep">标准块 90 分钟（深度）</option>
+          <option value="light">轻量块 45 分钟（启动/状态差）</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div style="flex:1 1 100%;">
+        <label>本执行块目标（必须写）</label>
+        <input id="goalInput" placeholder="一句话写清：本块要完成什么？" />
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div>
+        <label>启动锚点（开始时提示）</label>
+        <select id="anchorSelect">
+          <option value="写下目标 + 清桌面 2 分钟">写下目标 + 清桌面 2 分钟</option>
+          <option value="倒计时 10 秒 + 深呼吸 3 次">倒计时 10 秒 + 深呼吸 3 次</option>
+          <option value="打开材料 + 先做 1 个最小动作">打开材料 + 先做 1 个最小动作</option>
+          <option value="喝水 + 戴耳塞/降噪">喝水 + 戴耳塞/降噪</option>
+        </select>
+      </div>
+      <div>
+        <label>微奖励（≤10 分钟）</label>
+        <select id="microReward">
+          <option value="喝水 + 走动 2 分钟">喝水 + 走动 2 分钟</option>
+          <option value="拉伸 5 分钟">拉伸 5 分钟</option>
+          <option value="听 1-2 首歌（≤10 分钟）">听 1-2 首歌（≤10 分钟）</option>
+          <option value="闭眼休息 3 分钟">闭眼休息 3 分钟</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="timer">
+      <div>
+        <div class="small" id="blockMeta">未开始</div>
+        <div class="time" id="timeDisplay">00:00</div>
+      </div>
+      <div class="row" style="flex:0 0 auto; gap:8px;">
+        <button id="startBtn">开始</button>
+        <button id="pauseBtn" class="btnGhost">暂停</button>
+        <button id="finishBtn" class="btn2">完成登记</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="row">
+      <div style="flex:1 1 100%;">
+        <label>强制硬输出（必须写，写完才算完成）</label>
+        <textarea id="outputInput" placeholder="建议模板：&#10;1) 我完成了：...&#10;2) 关键点/错因：...（至少 3 条）&#10;3) 下一步：..."></textarea>
+        <div class="small">规则：没有硬输出 = 本块不计入完成。</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="row">
+      <button id="quickLightBtn" class="btnGhost">切换：轻量块</button>
+      <button id="quickDeepBtn" class="btnGhost">切换：标准块</button>
+      <button id="quickLogBtn" class="btnGhost">无需计时：直接登记</button>
+    </div>
+
+    <div class="help" style="margin-top:10px;">
+      <b>结构建议</b><br/>
+      标准块：启动 5m → 核心执行 40m → 输出 10m → 休息 10m → 巩固 25m<br/>
+      轻量块：启动 5m → 执行 25m → 输出 5m → 回顾+休息 10m
+    </div>
+  </section>
+
+  <!-- RIGHT column -->
+  <aside class="card" id="panelToday" style="display:none;">
+    <h2>③ 今日我做了什么</h2>
+
+    <div class="twoCol">
+      <div class="card" style="box-shadow:none;">
+        <h2 style="margin-bottom:8px;">今日完成的 To-Do</h2>
+        <div class="list" id="todayDoneTodos"></div>
+      </div>
+      <div class="card" style="box-shadow:none;">
+        <h2 style="margin-bottom:8px;">今日完成的 执行块</h2>
+        <div class="list" id="todayBlocksList"></div>
+      </div>
+    </div>
+  </aside>
+
+  <aside class="card" id="panelStats" style="display:none;">
+    <h2>④ 统计 / 奖励 / 趋势</h2>
+
+    <div class="card" style="box-shadow:none;">
+      <h2 style="margin-bottom:8px;">今日计划 & KPI</h2>
+
+      <div class="row">
+        <div>
+          <label>今日计划执行块（N）</label>
+          <input id="planBlocks" type="number" min="0" step="1" placeholder="如：4" />
+        </div>
+        <div>
+          <label>当日达成奖励阈值（≥X 块）</label>
+          <input id="dailyRewardThreshold" type="number" min="0" step="1" placeholder="如：2" />
+        </div>
+        <div class="row" style="flex:0 0 auto;">
+          <button id="savePlanBtn" class="btn2">保存</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="kpi" style="margin-bottom:10px;">
+        <div class="box">
+          <div class="small">今日完成执行块</div>
+          <div class="num" id="kpiBlocks">0</div>
+        </div>
+        <div class="box">
+          <div class="small">今日完成率</div>
+          <div class="num" id="kpiRate">0%</div>
+        </div>
+        <div class="box">
+          <div class="small">连续达标天数（≥70%）</div>
+          <div class="num" id="kpiStreak">0</div>
+        </div>
+      </div>
+
+      <div class="help" id="rewardStatus">-</div>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="claimDailyBtn" class="btn2">我已领取当日奖励</button>
+        <button id="claimWeeklyBtn" class="btn2">我已领取周期奖励</button>
+      </div>
+      <div class="small" style="margin-top:8px;">领取按钮用于防止重复提示，不影响统计。</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="card" style="box-shadow:none;">
+      <h2 style="margin-bottom:8px;">近 7 天完成率</h2>
+      <canvas id="chart" width="900" height="320"></canvas>
+      <div class="small" style="margin-top:8px;">
+        口径：完成率 = 完成块数 / 计划块数（计划为 0 按 100%）
+      </div>
+    </div>
+  </aside>
+</main>
+
+<!-- Manage Categories Modal -->
+<div class="modalMask" id="catModalMask">
+  <div class="modal">
+    <h3>管理分类/项目</h3>
+    <div class="small" style="margin-bottom:10px;">
+      分类的用途：给 To-Do 和执行块打标签（学习/工作/副业/健身…），方便筛选与回看。支持新增/重命名/删除。
+    </div>
+
+    <div class="row">
+      <div>
+        <label>新增分类</label>
+        <div class="row" style="gap:8px; flex-wrap:nowrap;">
+          <input id="newCatName" placeholder="如：数学 / 工作 / 副业" />
+          <button id="addCatBtn" style="flex:0 0 auto;">添加</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="list" id="catList" style="max-height:240px;"></div>
+
+    <div class="modalActions">
+      <button class="btnGhost" id="closeCatModalBtn">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom install bar -->
+<div class="bottomBar" id="installBar">
+  <div class="hint">
+    想像 App 一样使用？<br/>点击安装到主屏幕（支持离线）。
+  </div>
+  <div class="row" style="flex:0 0 auto; gap:8px;">
+    <button class="btn2" id="installBtn">安装</button>
+    <button class="btnGhost" id="dismissInstallBtn">以后再说</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">提示</div>
+
+<script>
+/* =========================
+   Storage model (v2)
+   ========================= */
+const STORE_KEY = "execution_os_v2";
+
+function todayKey(d = new Date()){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const da = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${da}`;
+}
+function nowHM(){
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(!raw){
+      return {
+        // "分类/项目"：用于给 todo & block 打标签
+        categories: ["学习","工作","副业","健身","生活"],
+        // 多个 To-Do 列表
+        todoLists: [
+          { id: crypto.randomUUID(), name: "默认清单", todos: [] }
+        ],
+        ui: {
+          activeTab: "todo",
+          activeTodoListId: null
+        },
+        settings: {
+          dailyRewardThreshold: 2,
+          weeklyStreakDays: 3,
+          streakRateThreshold: 0.70
+        },
+        days: {}, // dateKey -> { planBlocks, dailyRewardThreshold, dailyClaimed, logs:[], todoDoneIds:[] }
+        weeklyRewardLastClaimedAt: null
+      };
+    }
+    const s = JSON.parse(raw);
+    return s;
+  }catch(e){
+    console.warn("load failed", e);
+    return null;
+  }
+}
+let state = loadState();
+if(!state){
+  state = {
+    categories:["学习","工作","副业","健身","生活"],
+    todoLists:[{id:crypto.randomUUID(), name:"默认清单", todos:[]}],
+    ui:{activeTab:"todo", activeTodoListId:null},
+    settings:{dailyRewardThreshold:2, weeklyStreakDays:3, streakRateThreshold:0.70},
+    days:{},
+    weeklyRewardLastClaimedAt:null
+  };
+}
+function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+
+/* =========================
+   Timer
+   ========================= */
+let timer = {
+  running:false,
+  startedAt:null,
+  remainingMs:0,
+  totalMs:0,
+  tickHandle:null
+};
+function getBlockTotalMs(type){ return (type==="light"?45:90)*60*1000; }
+function fmtTime(ms){
+  ms = Math.max(0, ms|0);
+  const s = Math.floor(ms/1000);
+  const mm = Math.floor(s/60);
+  const ss = s%60;
+  return `${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+}
+function stopTick(){
+  if(timer.tickHandle){ clearInterval(timer.tickHandle); timer.tickHandle=null; }
+}
+function startTick(){
+  stopTick();
+  timer.tickHandle = setInterval(()=>{
+    if(!timer.running) return;
+    const elapsed = Date.now() - timer.startedAt;
+    timer.remainingMs = timer.totalMs - elapsed;
+    updateTimerUI();
+    if(timer.remainingMs <= 0){
+      timer.running = false;
+      stopTick();
+      timer.remainingMs = 0;
+      updateTimerUI();
+      toast("计时结束：写硬输出 → 完成登记 ✅");
+    }
+  }, 200);
+}
+function resetTimer(){
+  timer.running=false;
+  timer.startedAt=null;
+  timer.remainingMs=0;
+  timer.totalMs=0;
+  stopTick();
+  updateTimerUI();
+}
+
+/* =========================
+   DOM helpers
+   ========================= */
+const $ = (id)=>document.getElementById(id);
+const toastEl = $("toast");
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  setTimeout(()=>toastEl.classList.remove("show"), 1900);
+}
+function ensureDay(key = todayKey()){
+  if(!state.days[key]){
+    state.days[key] = {
+      planBlocks: 0,
+      dailyRewardThreshold: state.settings.dailyRewardThreshold ?? 2,
+      dailyClaimed: false,
+      logs: [],
+      todoDoneIds: [] // ids of todos done today (snapshot)
+    };
+  }
+  return state.days[key];
+}
+function activeTodoList(){
+  if(!state.ui.activeTodoListId){
+    state.ui.activeTodoListId = state.todoLists[0]?.id ?? null;
+  }
+  return state.todoLists.find(l => l.id === state.ui.activeTodoListId) || state.todoLists[0];
+}
+
+/* =========================
+   Tabs / panels
+   ========================= */
+function setActiveTab(tab){
+  state.ui.activeTab = tab;
+  saveState();
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.classList.toggle("active", t.dataset.tab === tab);
+  });
+  $("panelTodo").style.display = (tab==="todo") ? "" : "none";
+  $("panelBlock").style.display = (tab==="block") ? "" : "none";
+  $("panelToday").style.display = (tab==="today") ? "" : "none";
+  $("panelStats").style.display = (tab==="stats") ? "" : "none";
+  refreshAll();
+}
+
+/* =========================
+   Header
+   ========================= */
+function setTodayPill(){
+  const d = new Date();
+  const days = ["日","一","二","三","四","五","六"];
+  $("todayPill").textContent = `今天：${todayKey(d)}（周${days[d.getDay()]}）`;
+}
+
+/* =========================
+   Categories
+   ========================= */
+function populateCategories(){
+  const catSelects = [$("todoCat"), $("blockCat")];
+  catSelects.forEach(sel=>{
+    if(!sel) return;
+    sel.innerHTML="";
+    state.categories.forEach(c=>{
+      const opt=document.createElement("option");
+      opt.value=c; opt.textContent=c;
+      sel.appendChild(opt);
+    });
+  });
+}
+function openCatModal(){
+  $("catModalMask").style.display="flex";
+  renderCatList();
+}
+function closeCatModal(){
+  $("catModalMask").style.display="none";
+}
+function renderCatList(){
+  const list = $("catList");
+  list.innerHTML="";
+  state.categories.forEach((c, idx)=>{
+    const item=document.createElement("div");
+    item.className="item";
+    const top=document.createElement("div");
+    top.className="itemTop";
+    const title=document.createElement("div");
+    title.className="itemTitle";
+    title.textContent=c;
+
+    const actions=document.createElement("div");
+    actions.className="row";
+    actions.style.flex="0 0 auto";
+    actions.style.gap="8px";
+
+    const renameBtn=document.createElement("button");
+    renameBtn.className="btnGhost";
+    renameBtn.textContent="重命名";
+    renameBtn.onclick=()=>{
+      const nv = prompt("输入新名称", c);
+      if(!nv) return;
+      const name = nv.trim();
+      if(!name) return;
+      if(state.categories.includes(name)) return toast("该分类已存在");
+      // replace in categories
+      state.categories[idx]=name;
+      // replace in todos and logs
+      state.todoLists.forEach(l=>{
+        l.todos.forEach(t=>{ if(t.cat===c) t.cat=name; });
+      });
+      Object.values(state.days).forEach(day=>{
+        (day.logs||[]).forEach(log=>{ if(log.cat===c) log.cat=name; });
+      });
+      saveState();
+      toast("已重命名");
+      populateCategories();
+      renderCatList();
+      refreshAll();
+    };
+
+    const delBtn=document.createElement("button");
+    delBtn.className="btnDanger";
+    delBtn.textContent="删除";
+    delBtn.onclick=()=>{
+      if(state.categories.length<=1) return toast("至少保留 1 个分类");
+      if(!confirm(`删除分类「${c}」？（任务/记录将改为「未分类」）`)) return;
+
+      // remove cat
+      state.categories.splice(idx,1);
+
+      // ensure "未分类"
+      if(!state.categories.includes("未分类")) state.categories.unshift("未分类");
+
+      // re-map
+      const fallback="未分类";
+      state.todoLists.forEach(l=>{
+        l.todos.forEach(t=>{ if(t.cat===c) t.cat=fallback; });
+      });
+      Object.values(state.days).forEach(day=>{
+        (day.logs||[]).forEach(log=>{ if(log.cat===c) log.cat=fallback; });
+      });
+
+      saveState();
+      toast("已删除分类");
+      populateCategories();
+      renderCatList();
+      refreshAll();
+    };
+
+    actions.appendChild(renameBtn);
+    actions.appendChild(delBtn);
+
+    top.appendChild(title);
+    top.appendChild(actions);
+    item.appendChild(top);
+    list.appendChild(item);
+  });
+}
+function addCategory(){
+  const v = $("newCatName").value.trim();
+  if(!v) return toast("请输入分类名称");
+  if(state.categories.includes(v)) return toast("分类已存在");
+  state.categories.push(v);
+  $("newCatName").value="";
+  saveState();
+  populateCategories();
+  renderCatList();
+  toast("已添加分类");
+}
+
+/* =========================
+   To-Do Lists
+   ========================= */
+function populateTodoLists(){
+  const sel = $("todoListSelect");
+  sel.innerHTML="";
+  state.todoLists.forEach(l=>{
+    const opt=document.createElement("option");
+    opt.value=l.id; opt.textContent=l.name;
+    sel.appendChild(opt);
+  });
+  const active = activeTodoList();
+  sel.value = active.id;
+}
+function addTodoList(){
+  const name = $("newListName").value.trim();
+  if(!name) return toast("请输入列表名称");
+  const list = { id: crypto.randomUUID(), name, todos: [] };
+  state.todoLists.push(list);
+  state.ui.activeTodoListId = list.id;
+  $("newListName").value="";
+  saveState();
+  populateTodoLists();
+  toast("已新建列表");
+  renderTodos();
+}
+function renameTodoList(){
+  const list = activeTodoList();
+  const nv = prompt("新列表名", list.name);
+  if(!nv) return;
+  const name = nv.trim();
+  if(!name) return;
+  list.name = name;
+  saveState();
+  populateTodoLists();
+  toast("已重命名");
+}
+function deleteTodoList(){
+  if(state.todoLists.length<=1) return toast("至少保留 1 个列表");
+  const list = activeTodoList();
+  if(!confirm(`删除列表「${list.name}」？其中 To-Do 会一并删除。`)) return;
+  state.todoLists = state.todoLists.filter(l=>l.id!==list.id);
+  state.ui.activeTodoListId = state.todoLists[0].id;
+  saveState();
+  populateTodoLists();
+  toast("已删除列表");
+  renderTodos();
+}
+
+/* =========================
+   To-Do items
+   ========================= */
+let selectedTodoId = null;
+
+function addTodo(){
+  const list = activeTodoList();
+  const title = $("todoTitle").value.trim();
+  if(!title) return toast("请输入 To-Do 内容");
+  const cat = $("todoCat").value || "未分类";
+  const pr = Number($("todoPriority").value);
+  const est = Number($("todoEstimate").value);
+
+  const todo = {
+    id: crypto.randomUUID(),
+    title,
+    cat,
+    priority: pr,
+    estimateMin: est,
+    createdAt: Date.now(),
+    doneAt: null
+  };
+  list.todos.push(todo);
+  $("todoTitle").value="";
+  saveState();
+  toast("已添加 To-Do");
+  renderTodos();
+}
+
+function toggleTodoDone(todoId){
+  const list = activeTodoList();
+  const t = list.todos.find(x=>x.id===todoId);
+  if(!t) return;
+
+  const day = ensureDay();
+  if(t.doneAt){
+    t.doneAt = null;
+    day.todoDoneIds = day.todoDoneIds.filter(id=>id!==t.id);
+    toast("已标记为未完成");
+  }else{
+    t.doneAt = Date.now();
+    if(!day.todoDoneIds.includes(t.id)) day.todoDoneIds.push(t.id);
+    toast("已完成 ✅（会出现在今日模块）");
+  }
+  saveState();
+  renderTodos();
+  renderTodayModule();
+}
+
+function editTodo(todoId){
+  const list = activeTodoList();
+  const t = list.todos.find(x=>x.id===todoId);
+  if(!t) return;
+  const nv = prompt("修改 To-Do", t.title);
+  if(!nv) return;
+  const title = nv.trim();
+  if(!title) return;
+  t.title = title;
+  saveState();
+  toast("已修改");
+  renderTodos();
+  renderTodayModule();
+}
+
+function deleteTodo(todoId){
+  const list = activeTodoList();
+  const idx = list.todos.findIndex(x=>x.id===todoId);
+  if(idx<0) return;
+  if(!confirm("删除该 To-Do？")) return;
+
+  const t = list.todos[idx];
+  // remove from today's done snapshot
+  const day = ensureDay();
+  day.todoDoneIds = day.todoDoneIds.filter(id=>id!==t.id);
+
+  list.todos.splice(idx,1);
+  if(selectedTodoId === todoId) selectedTodoId = null;
+
+  saveState();
+  toast("已删除 To-Do");
+  renderTodos();
+  renderTodayModule();
+}
+
+function renderTodos(){
+  const list = activeTodoList();
+  const filter = $("todoFilter").value;
+  const sort = $("todoSort").value;
+
+  let todos = list.todos.slice();
+
+  if(filter==="open") todos = todos.filter(t=>!t.doneAt);
+  if(filter==="done") todos = todos.filter(t=>!!t.doneAt);
+
+  if(sort==="priority"){
+    todos.sort((a,b)=> b.priority-a.priority || (a.estimateMin-b.estimateMin) || (b.createdAt-a.createdAt));
+  }else if(sort==="estimate"){
+    todos.sort((a,b)=> a.estimateMin-b.estimateMin || (b.priority-a.priority) || (b.createdAt-a.createdAt));
+  }else{
+    todos.sort((a,b)=> b.createdAt-a.createdAt);
+  }
+
+  const wrap = $("todoList");
+  wrap.innerHTML="";
+
+  if(todos.length===0){
+    const empty=document.createElement("div");
+    empty.className="help";
+    empty.textContent="当前筛选下没有 To-Do。你可以添加一个“现在就能开始”的最小动作。";
+    wrap.appendChild(empty);
+    return;
+  }
+
+  todos.forEach(t=>{
+    const item=document.createElement("div");
+    item.className="item";
+    item.style.borderColor = (selectedTodoId===t.id) ? "rgba(96,165,250,.50)" : "rgba(255,255,255,.08)";
+
+    const top=document.createElement("div");
+    top.className="itemTop";
+
+    const left=document.createElement("div");
+    const title=document.createElement("div");
+    title.className="itemTitle";
+    title.textContent = t.title;
+    const meta=document.createElement("div");
+    meta.className="small";
+    const prTxt = t.priority===2?"高":(t.priority===1?"中":"低");
+    meta.textContent = `分类：${t.cat} · 优先级：${prTxt} · 预计：${t.estimateMin}min`;
+    left.appendChild(title);
+    left.appendChild(meta);
+
+    const right=document.createElement("div");
+    right.className="row";
+    right.style.flex="0 0 auto";
+    right.style.gap="8px";
+
+    const selectBtn=document.createElement("button");
+    selectBtn.className="btnGhost";
+    selectBtn.textContent = (selectedTodoId===t.id) ? "已选中" : "选中";
+    selectBtn.onclick=()=>{
+      selectedTodoId = (selectedTodoId===t.id) ? null : t.id;
+      renderTodos();
+    };
+
+    const doneBtn=document.createElement("button");
+    doneBtn.className = t.doneAt ? "btn2" : "";
+    doneBtn.textContent = t.doneAt ? "已完成" : "完成";
+    doneBtn.onclick=()=>toggleTodoDone(t.id);
+
+    const editBtn=document.createElement("button");
+    editBtn.className="btnGhost";
+    editBtn.textContent="编辑";
+    editBtn.onclick=()=>editTodo(t.id);
+
+    const delBtn=document.createElement("button");
+    delBtn.className="btnDanger";
+    delBtn.textContent="删";
+    delBtn.onclick=()=>deleteTodo(t.id);
+
+    right.appendChild(selectBtn);
+    right.appendChild(doneBtn);
+    right.appendChild(editBtn);
+    right.appendChild(delBtn);
+
+    top.appendChild(left);
+    top.appendChild(right);
+    item.appendChild(top);
+
+    wrap.appendChild(item);
+  });
+}
+
+function fillSelectedTodoIntoBlock(){
+  const list = activeTodoList();
+  const t = list.todos.find(x=>x.id===selectedTodoId);
+  if(!t) return toast("先选中一个 To-Do");
+  $("goalInput").value = t.title;
+  $("blockCat").value = t.cat;
+  toast("已填入执行块目标");
+  setActiveTab("block");
+}
+
+/* =========================
+   Blocks / logs
+   ========================= */
+function updateTimerUI(){
+  $("timeDisplay").textContent = fmtTime(timer.remainingMs);
+  if(timer.running){
+    $("blockMeta").textContent = `进行中 · ${$("blockType").value==="deep"?"标准块":"轻量块"} · ${$("blockCat").value}`;
+  }else if(timer.startedAt){
+    $("blockMeta").textContent = `已暂停 · ${$("blockType").value==="deep"?"标准块":"轻量块"} · ${$("blockCat").value}`;
+  }else{
+    $("blockMeta").textContent = "未开始";
+  }
+}
+
+function startBlock(){
+  const goal = $("goalInput").value.trim();
+  if(!goal) return toast("先写清本执行块目标");
+  const anchor = $("anchorSelect").value;
+  toast("启动锚点：" + anchor);
+
+  timer.totalMs = getBlockTotalMs($("blockType").value);
+  if(!timer.startedAt || timer.remainingMs<=0){
+    timer.startedAt = Date.now();
+    timer.remainingMs = timer.totalMs;
+  }else{
+    // resume
+    timer.startedAt = Date.now() - (timer.totalMs - timer.remainingMs);
+  }
+  timer.running = true;
+  updateTimerUI();
+  startTick();
+}
+function pauseBlock(){
+  if(!timer.startedAt) return toast("还没开始");
+  if(!timer.running) return toast("当前已暂停");
+  const elapsed = Date.now() - timer.startedAt;
+  timer.remainingMs = Math.max(0, timer.totalMs - elapsed);
+  timer.running = false;
+  updateTimerUI();
+  toast("已暂停");
+}
+function finishBlock({useTimer=true}={}){
+  const goal = $("goalInput").value.trim();
+  const out = $("outputInput").value.trim();
+  if(!goal) return toast("目标不能为空");
+  if(!out) return toast("硬输出不能为空（写完才算完成）");
+
+  const type = $("blockType").value;
+  const durationMin = (type==="light"?45:90);
+  const cat = $("blockCat").value || "未分类";
+
+  const log = {
+    id: crypto.randomUUID(),
+    date: todayKey(),
+    time: nowHM(),
+    cat,
+    type,
+    durationMin,
+    goal,
+    output: out
+  };
+
+  const day = ensureDay();
+  day.logs.push(log);
+  saveState();
+
+  const micro = $("microReward").value;
+  toast("完成！微奖励：" + micro);
+
+  if(shouldTriggerDailyReward()){
+    setTimeout(()=>toast("已达成当日奖励条件：去领取吧 🎁"), 650);
+  }
+  if(shouldTriggerWeeklyReward()){
+    setTimeout(()=>toast("周期奖励条件已满足：安排一次补偿奖励 🎉"), 1100);
+  }
+
+  $("outputInput").value="";
+  if(useTimer) resetTimer();
+
+  refreshAll();
+}
+
+/* =========================
+   Plan / rewards / streak
+   ========================= */
+function dayRate(dayObj){
+  const plan = Number(dayObj.planBlocks)||0;
+  const done = (dayObj.logs||[]).length;
+  return plan>0 ? done/plan : 1;
+}
+function calcStreak(){
+  const threshold = state.settings.streakRateThreshold ?? 0.70;
+  let streak = 0;
+  let d = new Date();
+  for(let i=0;i<365;i++){
+    const key = todayKey(d);
+    const day = state.days[key];
+    if(!day) break;
+    if(dayRate(day) >= threshold){
+      streak++;
+      d.setDate(d.getDate()-1);
+    }else break;
+  }
+  return streak;
+}
+function shouldTriggerDailyReward(){
+  const day = ensureDay();
+  const done = day.logs.length;
+  const thr = Number(day.dailyRewardThreshold ?? state.settings.dailyRewardThreshold ?? 2);
+  return done >= thr && !day.dailyClaimed;
+}
+function shouldTriggerWeeklyReward(){
+  const needDays = state.settings.weeklyStreakDays ?? 3;
+  const streak = calcStreak();
+  if(streak < needDays) return false;
+  if(state.weeklyRewardLastClaimedAt){
+    const last = new Date(state.weeklyRewardLastClaimedAt);
+    const diffDays = (Date.now()-last.getTime())/(1000*60*60*24);
+    if(diffDays < 7) return false;
+  }
+  return true;
+}
+
+function loadPlanToInputs(){
+  const day = ensureDay();
+  $("planBlocks").value = day.planBlocks;
+  $("dailyRewardThreshold").value = day.dailyRewardThreshold ?? (state.settings.dailyRewardThreshold ?? 2);
+}
+function savePlan(){
+  const day = ensureDay();
+  day.planBlocks = Math.max(0, Number($("planBlocks").value)||0);
+  day.dailyRewardThreshold = Math.max(0, Number($("dailyRewardThreshold").value)||0);
+  state.settings.dailyRewardThreshold = day.dailyRewardThreshold;
+  saveState();
+  toast("已保存今日计划");
+  refreshAll();
+}
+function claimDaily(){
+  const day = ensureDay();
+  day.dailyClaimed = true;
+  saveState();
+  toast("已标记：当日奖励已领取");
+  refreshAll();
+}
+function claimWeekly(){
+  state.weeklyRewardLastClaimedAt = new Date().toISOString();
+  saveState();
+  toast("已标记：周期奖励已领取");
+  refreshAll();
+}
+
+function updateKPIs(){
+  const day = ensureDay();
+  const done = day.logs.length;
+  const plan = Number(day.planBlocks)||0;
+  const rate = plan>0 ? done/plan : 1;
+  $("kpiBlocks").textContent = done;
+  $("kpiRate").textContent = `${Math.round(rate*100)}%`;
+  $("kpiStreak").textContent = calcStreak().toString();
+}
+function updateRewardStatus(){
+  const day = ensureDay();
+  const done = day.logs.length;
+  const plan = Number(day.planBlocks)||0;
+  const rate = plan>0 ? done/plan : 1;
+  const streak = calcStreak();
+  const thr = Number(day.dailyRewardThreshold ?? state.settings.dailyRewardThreshold ?? 2);
+
+  let lines = [];
+  lines.push(`今日：完成 <b>${done}</b> 块 / 计划 <b>${plan}</b> 块，完成率 <b>${Math.round(rate*100)}%</b>。`);
+  if(plan===0){
+    lines.push(`<span class="hl-warn">提示：</span>今日计划为 0，完成率按 100% 处理（建议设定计划更有“系统感”）。`);
+  }
+  if(day.dailyClaimed){
+    lines.push(`<span class="hl-good">当日达成奖励：</span>已领取 ✅（阈值 ≥${thr} 块）`);
+  }else if(done >= thr){
+    lines.push(`<span class="hl-good">当日达成奖励：</span>已达成！现在就去领取（阈值 ≥${thr} 块）。`);
+  }else{
+    lines.push(`当日达成奖励：还差 <b>${Math.max(0, thr-done)}</b> 块触发（阈值 ≥${thr} 块）。`);
+  }
+  lines.push(`连续达标天数（≥70%）：<b>${streak}</b> 天。`);
+  if(shouldTriggerWeeklyReward()){
+    lines.push(`<span class="hl-good">周期补偿奖励：</span>已满足条件（连续 3 天 ≥70%）。建议本周安排一次“无内疚奖励”。`);
+  }else{
+    lines.push(`周期补偿奖励：条件为连续 3 天 ≥70%，本周尚未触发或已领取。`);
+  }
+  $("rewardStatus").innerHTML = lines.join("<br/>");
+}
+
+/* =========================
+   Today module
+   ========================= */
+function renderTodayModule(){
+  const day = ensureDay();
+  const doneWrap = $("todayDoneTodos");
+  const blocksWrap = $("todayBlocksList");
+  doneWrap.innerHTML="";
+  blocksWrap.innerHTML="";
+
+  // Done todos today (collect from all lists by id)
+  const doneIds = new Set(day.todoDoneIds || []);
+  const doneTodos = [];
+  state.todoLists.forEach(list=>{
+    list.todos.forEach(t=>{
+      if(doneIds.has(t.id)) doneTodos.push({ ...t, listName:list.name });
+    });
+  });
+
+  if(doneTodos.length===0){
+    const empty=document.createElement("div");
+    empty.className="help";
+    empty.textContent="今天还没有完成 To-Do。去 To-Do 页完成一个最小动作，今天就“有进展”了。";
+    doneWrap.appendChild(empty);
+  }else{
+    doneTodos.sort((a,b)=>(b.doneAt||0)-(a.doneAt||0));
+    doneTodos.forEach(t=>{
+      const item=document.createElement("div");
+      item.className="item";
+      const top=document.createElement("div");
+      top.className="itemTop";
+      const left=document.createElement("div");
+      const title=document.createElement("div");
+      title.className="itemTitle";
+      title.textContent=t.title;
+      const meta=document.createElement("div");
+      meta.className="small";
+      meta.textContent=`来自：${t.listName} · 分类：${t.cat} · ${t.estimateMin}min`;
+      left.appendChild(title); left.appendChild(meta);
+      const tag=document.createElement("div");
+      tag.className="tag";
+      tag.textContent="完成 ✅";
+      top.appendChild(left); top.appendChild(tag);
+      item.appendChild(top);
+      doneWrap.appendChild(item);
+    });
+  }
+
+  // Blocks today
+  if(day.logs.length===0){
+    const empty=document.createElement("div");
+    empty.className="help";
+    empty.textContent="今天还没有完成执行块。即使状态差，也可以用“轻量块 45 分钟”。";
+    blocksWrap.appendChild(empty);
+  }else{
+    day.logs.slice().reverse().forEach(log=>{
+      const item=document.createElement("div");
+      item.className="item";
+      const top=document.createElement("div");
+      top.className="itemTop";
+      const left=document.createElement("div");
+      const title=document.createElement("div");
+      title.className="itemTitle";
+      title.textContent = `${log.cat} · ${log.type==="deep"?"标准块":"轻量块"} · ${log.durationMin}min`;
+      const meta=document.createElement("div");
+      meta.className="small";
+      meta.textContent = `${log.time} · 目标：${log.goal}`;
+      left.appendChild(title); left.appendChild(meta);
+      const tag=document.createElement("div");
+      tag.className="tag";
+      tag.textContent="完成 ✅";
+      top.appendChild(left); top.appendChild(tag);
+      const body=document.createElement("div");
+      body.className="itemBody";
+      body.textContent = `硬输出：\n${log.output}`;
+      item.appendChild(top);
+      item.appendChild(body);
+      blocksWrap.appendChild(item);
+    });
+  }
+}
+
+/* =========================
+   Chart
+   ========================= */
+function roundRect(ctx, x, y, w, h, r, fillStyle, strokeStyle){
+  const radius = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+radius, y);
+  ctx.arcTo(x+w, y, x+w, y+h, radius);
+  ctx.arcTo(x+w, y+h, x, y+h, radius);
+  ctx.arcTo(x, y+h, x, y, radius);
+  ctx.arcTo(x, y, x+w, y, radius);
+  ctx.closePath();
+  ctx.fillStyle = fillStyle;
+  ctx.fill();
+  if(strokeStyle){
+    ctx.strokeStyle = strokeStyle;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+function drawChart(){
+  const canvas = $("chart");
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  const keys=[];
+  const d=new Date(); d.setHours(12,0,0,0);
+  for(let i=6;i>=0;i--){
+    const t=new Date(d); t.setDate(d.getDate()-i);
+    keys.push(todayKey(t));
+  }
+  const vals = keys.map(k=>{
+    const day = state.days[k];
+    if(!day) return null;
+    return Math.max(0, Math.min(1, dayRate(day)));
+  });
+
+  const pad=28;
+  const innerW=w-pad*2;
+  const innerH=h-pad*2;
+  const barW=innerW/7*0.65;
+  const gap=innerW/7*0.35;
+
+  ctx.strokeStyle="rgba(255,255,255,.12)";
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(pad,pad);
+  ctx.lineTo(pad,h-pad);
+  ctx.lineTo(w-pad,h-pad);
+  ctx.stroke();
+
+  // grid
+  ctx.strokeStyle="rgba(255,255,255,.08)";
+  ctx.lineWidth=1;
+  [0,0.5,1].forEach(g=>{
+    const y=h-pad-g*innerH;
+    ctx.beginPath();
+    ctx.moveTo(pad,y);
+    ctx.lineTo(w-pad,y);
+    ctx.stroke();
+  });
+
+  for(let i=0;i<7;i++){
+    const x=pad + i*(barW+gap) + gap/2;
+    const v=vals[i];
+    const barH = v==null ? innerH*0.08 : innerH*v;
+    const y = h-pad-barH;
+
+    let fill="rgba(147,164,199,.25)";
+    if(v!=null){
+      if(v>=0.70) fill="rgba(74,222,128,.45)";
+      else if(v>=0.40) fill="rgba(251,191,36,.40)";
+      else fill="rgba(251,113,133,.40)";
+    }
+    roundRect(ctx,x,y,barW,barH,10,fill,"rgba(255,255,255,.10)");
+
+    ctx.fillStyle="rgba(147,164,199,.85)";
+    ctx.font="20px ui-monospace, Menlo, Monaco, Consolas, monospace";
+    ctx.fillText(keys[i].slice(5), x, h-pad+22);
+
+    ctx.fillStyle="rgba(234,240,255,.92)";
+    ctx.font="22px ui-monospace, Menlo, Monaco, Consolas, monospace";
+    const txt = v==null ? "-" : `${Math.round(v*100)}%`;
+    ctx.fillText(txt, x, y-8);
+  }
+
+  const y70 = h-pad-0.70*innerH;
+  ctx.strokeStyle="rgba(96,165,250,.65)";
+  ctx.setLineDash([10,8]);
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(pad,y70);
+  ctx.lineTo(w-pad,y70);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle="rgba(96,165,250,.90)";
+  ctx.font="18px ui-monospace, Menlo, Monaco, Consolas, monospace";
+  ctx.fillText("70% 线", pad+6, y70-8);
+}
+
+/* =========================
+   Export / Reset
+   ========================= */
+function exportJSON(){
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "execution_os_export.json";
+  a.click();
+  URL.revokeObjectURL(url);
+  toast("已导出");
+}
+function resetAll(){
+  if(!confirm("确定清空所有数据？不可撤销。")) return;
+  localStorage.removeItem(STORE_KEY);
+  toast("已清空，刷新页面生效");
+  location.reload();
+}
+
+/* =========================
+   Refresh
+   ========================= */
+function refreshAll(){
+  setTodayPill();
+  ensureDay();
+  populateTodoLists();
+  populateCategories();
+  loadPlanToInputs();
+  updateKPIs();
+  updateRewardStatus();
+  renderTodos();
+  renderTodayModule();
+  drawChart();
+}
+
+/* =========================
+   PWA install
+   ========================= */
+let deferredPrompt = null;
+function setupPWA(){
+  // Register SW
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  }
+
+  const bar = $("installBar");
+  const installBtn = $("installBtn");
+  const dismissBtn = $("dismissInstallBtn");
+
+  window.addEventListener("beforeinstallprompt", (e)=>{
+    e.preventDefault();
+    deferredPrompt = e;
+    bar.style.display="flex";
+  });
+
+  installBtn.addEventListener("click", async ()=>{
+    if(!deferredPrompt) return toast("当前环境不支持安装（请用 https 或 localhost）");
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    bar.style.display="none";
+    toast(outcome === "accepted" ? "已开始安装" : "已取消安装");
+  });
+
+  dismissBtn.addEventListener("click", ()=>{
+    bar.style.display="none";
+    toast("好的，之后也可以再安装");
+  });
+}
+
+/* =========================
+   Wire up
+   ========================= */
+window.addEventListener("load", ()=>{
+  // Tabs
+  document.querySelectorAll(".tab").forEach(t=>{
+    t.addEventListener("click", ()=>setActiveTab(t.dataset.tab));
+  });
+  setActiveTab(state.ui.activeTab || "todo");
+
+  // Category modal
+  $("manageCatsBtn").addEventListener("click", openCatModal);
+  $("closeCatModalBtn").addEventListener("click", closeCatModal);
+  $("catModalMask").addEventListener("click", (e)=>{
+    if(e.target === $("catModalMask")) closeCatModal();
+  });
+  $("addCatBtn").addEventListener("click", addCategory);
+
+  // To-Do lists
+  $("todoListSelect").addEventListener("change", (e)=>{
+    state.ui.activeTodoListId = e.target.value;
+    selectedTodoId = null;
+    saveState();
+    renderTodos();
+  });
+  $("addListBtn").addEventListener("click", addTodoList);
+  $("renameListBtn").addEventListener("click", renameTodoList);
+  $("deleteListBtn").addEventListener("click", deleteTodoList);
+
+  // To-Do items
+  $("addTodoBtn").addEventListener("click", addTodo);
+  $("todoFilter").addEventListener("change", renderTodos);
+  $("todoSort").addEventListener("change", renderTodos);
+  $("addToBlockBtn").addEventListener("click", fillSelectedTodoIntoBlock);
+
+  // Blocks
+  $("startBtn").addEventListener("click", startBlock);
+  $("pauseBtn").addEventListener("click", pauseBlock);
+  $("finishBtn").addEventListener("click", ()=>finishBlock({useTimer:true}));
+  $("quickLogBtn").addEventListener("click", ()=>finishBlock({useTimer:false}));
+  $("quickLightBtn").addEventListener("click", ()=>{
+    $("blockType").value="light";
+    toast("已切换：轻量块");
+    updateTimerUI();
+  });
+  $("quickDeepBtn").addEventListener("click", ()=>{
+    $("blockType").value="deep";
+    toast("已切换：标准块");
+    updateTimerUI();
+  });
+  $("blockType").addEventListener("change", ()=>updateTimerUI());
+  $("blockCat").addEventListener("change", ()=>updateTimerUI());
+
+  // Plan / rewards
+  $("savePlanBtn").addEventListener("click", savePlan);
+  $("claimDailyBtn").addEventListener("click", claimDaily);
+  $("claimWeeklyBtn").addEventListener("click", claimWeekly);
+
+  // Export / reset
+  $("exportBtn").addEventListener("click", exportJSON);
+  $("resetBtn").addEventListener("click", resetAll);
+
+  // init
+  ensureDay();
+  resetTimer();
+  refreshAll();
+  setupPWA();
+
+  // redraw on resize
+  window.addEventListener("resize", ()=>drawChart());
+});
+</script>
+</body>
+</html>
