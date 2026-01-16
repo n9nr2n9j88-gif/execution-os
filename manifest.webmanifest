@@ -1,6 +1,6 @@
 {
-  "name": "个人执行系统",
-  "short_name": "执行系统",
+  "name": "My OS",
+  "short_name": "My OS",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0b0f19",
