@@ -1,6 +1,6 @@
 {
-  "name": "My OS",
-  "short_name": "My OS",
+  "name": "My Life OS",
+  "short_name": "My Life OS",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0b0f19",
